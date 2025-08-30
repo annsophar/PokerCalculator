@@ -1,38 +1,148 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>🖐️ odds calculator</title>
+  <title>🖐️ Odds Calculator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 400px; margin: auto; }
-    input, button { font-size: 1.2em; margin: 10px 0; width: 100%; }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 500px;
+      margin: auto;
+    }
+    select, button {
+      font-size: 1.1em;
+      padding: 6px;
+      margin: 10px 5px;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    .result {
+      margin-top: 20px;
+    }
+
+    .odds-table {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .odds-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .label {
+      width: 130px;
+      font-weight: bold;
+    }
+    .bar-container {
+      flex-grow: 1;
+      background-color: #eee;
+      border-radius: 8px;
+      overflow: hidden;
+      height: 24px;
+    }
+    .bar {
+      height: 100%;
+      background-color: #4caf50;
+      text-align: right;
+      color: white;
+      padding-right: 6px;
+      line-height: 24px;
+    }
+    .percent {
+      width: 60px;
+      text-align: right;
+      font-family: monospace;
+    }
   </style>
 </head>
 <body>
-  <h1>🖐️ odds calculator</h1>
-  
-  <label>Current Pot Size ($):</label>
-  <input type="number" id="pot" placeholder="e.g. 100">
+  <h1>🖐️ Hand Odds Calculator</h1>
+  <p>Select your two hole cards:</p>
 
-  <label>Amount to Call ($):</label>
-  <input type="number" id="call" placeholder="e.g. 20">
+  <select id="card1"></select>
+  <select id="card2"></select>
+  <button onclick="calculateOdds()">Calculate Odds</button>
 
-  <button onclick="calculate()">Calculate Pot Odds</button>
-
-  <h2 id="result"></h2>
+  <div class="result" id="output"></div>
 
   <script>
-    function calculate() {
-      const pot = parseFloat(document.getElementById('pot').value);
-      const call = parseFloat(document.getElementById('call').value);
-      if (isNaN(pot) || isNaN(call) || call <= 0) {
-        document.getElementById('result').textContent = "Please enter valid numbers.";
+    const suits = ['♠', '♥', '♦', '♣'];
+    const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+
+    const cardOptions = [];
+    for (let r of ranks) {
+      for (let s of suits) {
+        cardOptions.push(`${r}${s}`);
+      }
+    }
+
+    const card1 = document.getElementById('card1');
+    const card2 = document.getElementById('card2');
+
+    for (let c of cardOptions) {
+      const opt1 = document.createElement('option');
+      const opt2 = document.createElement('option');
+      opt1.value = opt2.value = c;
+      opt1.text = opt2.text = c;
+      card1.add(opt1);
+      card2.add(opt2);
+    }
+
+    // Approximate average preflop probabilities
+    const fixedOdds = {
+      pair: 42.0,
+      twoPair: 12.5,
+      threeOfKind: 2.1,
+      straight: 10.5,
+      flush: 6.5,
+      fullHouse: 0.9,
+      fourOfKind: 0.1,
+      straightFlush: 0.01
+    };
+
+    function calculateOdds() {
+      const c1 = card1.value;
+      const c2 = card2.value;
+      const output = document.getElementById('output');
+
+      if (c1 === c2) {
+        output.innerHTML = `<p>Please select two different cards.</p>`;
         return;
       }
-      const totalPot = pot + call;
-      const potOdds = (call / totalPot) * 100;
-      document.getElementById('result').textContent = 
-        `Pot Odds: ${potOdds.toFixed(2)}%`;
+
+      let html = `<h2>Preflop Chances</h2>`;
+      html += `<div class="odds-table">`;
+
+      for (const [hand, chance] of Object.entries(fixedOdds)) {
+        html += `
+          <div class="odds-row">
+            <div class="label">${formatHandName(hand)}</div>
+            <div class="bar-container">
+              <div class="bar" style="width: ${chance}%;"></div>
+            </div>
+            <div class="percent">${chance.toFixed(2)}%</div>
+          </div>
+        `;
+      }
+
+      html += `</div>`;
+      output.innerHTML = html;
+    }
+
+    function formatHandName(name) {
+      return {
+        pair: "Pair",
+        twoPair: "Two Pair",
+        threeOfKind: "Three of a Kind",
+        straight: "Straight",
+        flush: "Flush",
+        fullHouse: "Full House",
+        fourOfKind: "Four of a Kind",
+        straightFlush: "Straight Flush"
+      }[name] || name;
     }
   </script>
 </body>
