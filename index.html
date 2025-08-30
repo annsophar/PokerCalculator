@@ -106,17 +106,6 @@
       card2: { rank: null, suit: null }
     };
 
-    const fixedOdds = {
-      pair: 42.0,
-      twoPair: 12.5,
-      threeOfKind: 2.1,
-      straight: 10.5,
-      flush: 6.5,
-      fullHouse: 0.9,
-      fourOfKind: 0.1,
-      straightFlush: 0.01
-    };
-
     function createButtons(containerId, items, type, cardId) {
       const container = document.getElementById(containerId);
       items.forEach(value => {
@@ -124,7 +113,6 @@
         btn.textContent = value;
         btn.className = type;
         btn.onclick = () => {
-          // Unselect all of the same type for this card
           document.querySelectorAll(`#${containerId} .${type}`).forEach(b => b.classList.remove('selected'));
           btn.classList.add('selected');
           selected[cardId][type === 'rank' ? 'rank' : 'suit'] = value;
@@ -139,9 +127,54 @@
     createButtons("ranks2", ranks, "rank", "card2");
     createButtons("suits2", suits, "suit", "card2");
 
+    function computeOdds(card1, card2) {
+      const [rank1, suit1] = [card1.rank, card1.suit];
+      const [rank2, suit2] = [card2.rank, card2.suit];
+
+      const isPair = rank1 === rank2;
+      const isSuited = suit1 === suit2;
+
+      const rankValues = {
+        '2': 2, '3': 3, '4': 4, '5': 5, '6': 6,
+        '7': 7, '8': 8, '9': 9, 'T': 10,
+        'J': 11, 'Q': 12, 'K': 13, 'A': 14
+      };
+
+      const val1 = rankValues[rank1];
+      const val2 = rankValues[rank2];
+      const gap = Math.abs(val1 - val2);
+      const highRanks = [10, 11, 12, 13, 14]; // T-A
+
+      return {
+        pair: isPair ? 100.0 : 29.0,
+        twoPair: isPair ? 23.5 : 12.5,
+        threeOfKind: isPair ? 11.8 : 2.1,
+        straight: (gap <= 4 || (val1 === 14 && val2 === 2) || (val2 === 14 && val1 === 2)) ? 10.5 : 1.5,
+        flush: isSuited ? 6.5 : 0.3,
+        fullHouse: isPair ? 3.3 : 0.9,
+        fourOfKind: isPair ? 0.24 : 0.01,
+        straightFlush: (isSuited && gap <= 4) ? 0.02 : 0.001,
+        royalFlush: (isSuited && highRanks.includes(val1) && highRanks.includes(val2)) ? 0.003 : 0.0001
+      };
+    }
+
+    function formatHandName(name) {
+      return {
+        pair: "Pair",
+        twoPair: "Two Pairs",
+        threeOfKind: "Three of a Kind",
+        straight: "Straight",
+        flush: "Flush",
+        fullHouse: "Full House",
+        fourOfKind: "Four of a Kind",
+        straightFlush: "Straight Flush",
+        royalFlush: "Royal Flush"
+      }[name] || name;
+    }
+
     function updateOdds() {
-      const c1 = selected.card1.rank && selected.card1.suit ? selected.card1.rank + selected.card1.suit : null;
-      const c2 = selected.card2.rank && selected.card2.suit ? selected.card2.rank + selected.card2.suit : null;
+      const c1 = selected.card1.rank && selected.card1.suit ? selected.card1 : null;
+      const c2 = selected.card2.rank && selected.card2.suit ? selected.card2 : null;
 
       const output = document.getElementById("output");
 
@@ -150,14 +183,16 @@
         return;
       }
 
-      if (c1 === c2) {
+      if (c1.rank === c2.rank && c1.suit === c2.suit) {
         output.innerHTML = `<p>Please select two different cards.</p>`;
         return;
       }
 
+      const odds = computeOdds(c1, c2);
+
       let html = `<h2>Preflop chances</h2><div class="odds-table">`;
 
-      for (const [hand, chance] of Object.entries(fixedOdds)) {
+      for (const [hand, chance] of Object.entries(odds)) {
         html += `
           <div class="odds-row">
             <div class="label-hand">${formatHandName(hand)}</div>
@@ -171,19 +206,6 @@
 
       html += `</div>`;
       output.innerHTML = html;
-    }
-
-    function formatHandName(name) {
-      return {
-        pair: "Pair",
-        twoPair: "Two pairs",
-        threeOfKind: "Three of a kind",
-        straight: "Straight",
-        flush: "Flush",
-        fullHouse: "Full house",
-        fourOfKind: "Four of a kind",
-        straightFlush: "Straight flush"
-      }[name] || name;
     }
   </script>
 </body>
