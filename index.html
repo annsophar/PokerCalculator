@@ -155,7 +155,7 @@
         return;
       }
 
-      let html = `<h2>Preflop Chances</h2><div class="odds-table">`;
+      let html = `<h2>Preflop chances</h2><div class="odds-table">`;
 
       for (const [hand, chance] of Object.entries(fixedOdds)) {
         html += `
@@ -176,13 +176,13 @@
     function formatHandName(name) {
       return {
         pair: "Pair",
-        twoPair: "Two Pair",
-        threeOfKind: "Three of a Kind",
+        twoPair: "Two pairs",
+        threeOfKind: "Three of a kind",
         straight: "Straight",
         flush: "Flush",
-        fullHouse: "Full House",
-        fourOfKind: "Four of a Kind",
-        straightFlush: "Straight Flush"
+        fullHouse: "Full house",
+        fourOfKind: "Four of a kind",
+        straightFlush: "Straight flush"
       }[name] || name;
     }
   </script>
