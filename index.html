@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Poker Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 400px; margin: auto; }
+    input, button { font-size: 1.2em; margin: 10px 0; width: 100%; }
+  </style>
+</head>
+<body>
+  <h1>Poker Pot Odds Calculator</h1>
+  
+  <label>Current Pot Size ($):</label>
+  <input type="number" id="pot" placeholder="e.g. 100">
+
+  <label>Amount to Call ($):</label>
+  <input type="number" id="call" placeholder="e.g. 20">
+
+  <button onclick="calculate()">Calculate Pot Odds</button>
+
+  <h2 id="result"></h2>
+
+  <script>
+    function calculate() {
+      const pot = parseFloat(document.getElementById('pot').value);
+      const call = parseFloat(document.getElementById('call').value);
+      if (isNaN(pot) || isNaN(call) || call <= 0) {
+        document.getElementById('result').textContent = "Please enter valid numbers.";
+        return;
+      }
+      const totalPot = pot + call;
+      const potOdds = (call / totalPot) * 100;
+      document.getElementById('result').textContent = 
+        `Pot Odds: ${potOdds.toFixed(2)}%`;
+    }
+  </script>
+</body>
+</html>
