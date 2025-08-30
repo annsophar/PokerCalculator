@@ -48,4 +48,184 @@
     }
     .odds-row {
       display: flex;
-      align-ite
+      align-items: center;
+      gap: 10px;
+    }
+    .label-hand {
+      width: 130px;
+      font-weight: bold;
+    }
+    .bar-container {
+      flex-grow: 1;
+      background-color: #eee;
+      border-radius: 8px;
+      overflow: hidden;
+      height: 24px;
+    }
+    .bar {
+      height: 100%;
+      background-color: #4caf50;
+      text-align: right;
+      color: white;
+      padding-right: 6px;
+      line-height: 24px;
+    }
+    .percent {
+      width: 60px;
+      text-align: right;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <h1>🖐️ odds calculator</h1>
+
+  <!-- Card 1 -->
+  <div class="card-section" id="card1-section">
+    <div class="label">1st 🃏</div>
+    <div class="button-row" id="ranks1"></div>
+    <div class="button-row" id="suits1"></div>
+  </div>
+
+  <!-- Card 2 -->
+  <div class="card-section" id="card2-section">
+    <div class="label">2nd 🃏</div>
+    <div class="button-row" id="ranks2"></div>
+    <div class="button-row" id="suits2"></div>
+  </div>
+
+  <!-- Output -->
+  <div class="result" id="output"></div>
+
+  <script>
+    // Ranks with display label and internal value
+    const ranks = [
+      { label: '2', value: '2' },
+      { label: '3', value: '3' },
+      { label: '4', value: '4' },
+      { label: '5', value: '5' },
+      { label: '6', value: '6' },
+      { label: '7', value: '7' },
+      { label: '8', value: '8' },
+      { label: '9', value: '9' },
+      { label: '10', value: 'T' },  // Displayed as "10", handled as "T"
+      { label: 'J', value: 'J' },
+      { label: 'Q', value: 'Q' },
+      { label: 'K', value: 'K' },
+      { label: 'A', value: 'A' }
+    ];
+
+    const suits = ['♠', '♥', '♦', '♣'];
+
+    let selected = {
+      card1: { rank: null, suit: null },
+      card2: { rank: null, suit: null }
+    };
+
+    function createButtons(containerId, items, type, cardId) {
+      const container = document.getElementById(containerId);
+      items.forEach(item => {
+        const label = typeof item === 'object' ? item.label : item;
+        const value = typeof item === 'object' ? item.value : item;
+
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        btn.className = type;
+        btn.onclick = () => {
+          document.querySelectorAll(`#${containerId} .${type}`).forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          selected[cardId][type === 'rank' ? 'rank' : 'suit'] = value;
+          updateOdds();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    createButtons("ranks1", ranks, "rank", "card1");
+    createButtons("suits1", suits, "suit", "card1");
+    createButtons("ranks2", ranks, "rank", "card2");
+    createButtons("suits2", suits, "suit", "card2");
+
+    function computeOdds(card1, card2) {
+      const [rank1, suit1] = [card1.rank, card1.suit];
+      const [rank2, suit2] = [card2.rank, card2.suit];
+
+      const isPair = rank1 === rank2;
+      const isSuited = suit1 === suit2;
+
+      const rankValues = {
+        '2': 2, '3': 3, '4': 4, '5': 5, '6': 6,
+        '7': 7, '8': 8, '9': 9, 'T': 10,
+        'J': 11, 'Q': 12, 'K': 13, 'A': 14
+      };
+
+      const val1 = rankValues[rank1];
+      const val2 = rankValues[rank2];
+      const gap = Math.abs(val1 - val2);
+      const highRanks = [10, 11, 12, 13, 14]; // T-A
+
+      return {
+        pair: isPair ? 100.0 : 29.0,
+        twoPair: isPair ? 23.5 : 12.5,
+        threeOfKind: isPair ? 11.8 : 2.1,
+        straight: (gap <= 4 || (val1 === 14 && val2 === 2) || (val2 === 14 && val1 === 2)) ? 10.5 : 1.5,
+        flush: isSuited ? 6.5 : 0.3,
+        fullHouse: isPair ? 3.3 : 0.9,
+        fourOfKind: isPair ? 0.24 : 0.01,
+        straightFlush: (isSuited && gap <= 4) ? 0.02 : 0.001,
+        royalFlush: (isSuited && highRanks.includes(val1) && highRanks.includes(val2)) ? 0.003 : 0.0001
+      };
+    }
+
+    function formatHandName(name) {
+      return {
+        pair: "Pair",
+        twoPair: "Two pairs",
+        threeOfKind: "Three of a kind",
+        straight: "Straight",
+        flush: "Flush",
+        fullHouse: "Full house",
+        fourOfKind: "Four of a kind",
+        straightFlush: "Straight flush",
+        royalFlush: "Royal flush"
+      }[name] || name;
+    }
+
+    function updateOdds() {
+      const c1 = selected.card1.rank && selected.card1.suit ? selected.card1 : null;
+      const c2 = selected.card2.rank && selected.card2.suit ? selected.card2 : null;
+
+      const output = document.getElementById("output");
+
+      if (!c1 || !c2) {
+        output.innerHTML = '';
+        return;
+      }
+
+      if (c1.rank === c2.rank && c1.suit === c2.suit) {
+        output.innerHTML = `<p>Please select two different cards.</p>`;
+        return;
+      }
+
+      const odds = computeOdds(c1, c2);
+
+      let html = `<h2>Preflop chances</h2><div class="odds-table">`;
+
+      for (const [hand, chance] of Object.entries(odds)) {
+        html += `
+          <div class="odds-row">
+            <div class="label-hand">${formatHandName(hand)}</div>
+            <div class="bar-container">
+              <div class="bar" style="width: ${chance}%;"></div>
+            </div>
+            <div class="percent">${chance.toFixed(3)}%</div>
+          </div>
+        `;
+      }
+
+      html += `</div>`;
+      output.innerHTML = html;
+    }
+  </script>
+</body>
+</html>
