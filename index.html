@@ -1,25 +1,44 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>🖐️ odds calculator</title>
+  <title>🖐️ Odds Calculator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
       font-family: sans-serif;
       padding: 20px;
-      max-width: 500px;
+      max-width: 600px;
       margin: auto;
-    }
-    select, button {
-      font-size: 1.1em;
-      padding: 6px;
-      margin: 10px 5px;
     }
     h1, h2 {
       text-align: center;
     }
-    .result {
-      margin-top: 20px;
+    .card-section {
+      margin-bottom: 20px;
+    }
+    .label {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    button.rank, button.suit {
+      font-size: 1em;
+      padding: 6px 10px;
+      min-width: 36px;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+      background-color: #f9f9f9;
+      cursor: pointer;
+    }
+    button.selected {
+      background-color: #4caf50;
+      color: white;
+      border-color: #4caf50;
     }
 
     .odds-table {
@@ -32,7 +51,7 @@
       align-items: center;
       gap: 10px;
     }
-    .label {
+    .label-hand {
       width: 130px;
       font-weight: bold;
     }
@@ -59,39 +78,34 @@
   </style>
 </head>
 <body>
-  <h1>🖐️ odds calculator</h1>
-  <p>Select your two hole cards:</p>
+  <h1>🖐️ Hand Odds Calculator</h1>
 
-  <select id="card1"></select>
-  <select id="card2"></select>
-  <button onclick="calculateOdds()">Calculate Odds</button>
+  <!-- Card 1 -->
+  <div class="card-section" id="card1-section">
+    <div class="label">1st Card 🃏</div>
+    <div class="button-row" id="ranks1"></div>
+    <div class="button-row" id="suits1"></div>
+  </div>
 
+  <!-- Card 2 -->
+  <div class="card-section" id="card2-section">
+    <div class="label">2nd Card 🃏</div>
+    <div class="button-row" id="ranks2"></div>
+    <div class="button-row" id="suits2"></div>
+  </div>
+
+  <!-- Output -->
   <div class="result" id="output"></div>
 
   <script>
+    const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
     const suits = ['♠', '♥', '♦', '♣'];
-    const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
 
-    const cardOptions = [];
-    for (let r of ranks) {
-      for (let s of suits) {
-        cardOptions.push(`${r}${s}`);
-      }
-    }
+    let selected = {
+      card1: { rank: null, suit: null },
+      card2: { rank: null, suit: null }
+    };
 
-    const card1 = document.getElementById('card1');
-    const card2 = document.getElementById('card2');
-
-    for (let c of cardOptions) {
-      const opt1 = document.createElement('option');
-      const opt2 = document.createElement('option');
-      opt1.value = opt2.value = c;
-      opt1.text = opt2.text = c;
-      card1.add(opt1);
-      card2.add(opt2);
-    }
-
-    // Approximate average preflop probabilities
     const fixedOdds = {
       pair: 42.0,
       twoPair: 12.5,
@@ -103,23 +117,50 @@
       straightFlush: 0.01
     };
 
-    function calculateOdds() {
-      const c1 = card1.value;
-      const c2 = card2.value;
-      const output = document.getElementById('output');
+    function createButtons(containerId, items, type, cardId) {
+      const container = document.getElementById(containerId);
+      items.forEach(value => {
+        const btn = document.createElement('button');
+        btn.textContent = value;
+        btn.className = type;
+        btn.onclick = () => {
+          // Unselect all of the same type for this card
+          document.querySelectorAll(`#${containerId} .${type}`).forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          selected[cardId][type === 'rank' ? 'rank' : 'suit'] = value;
+          updateOdds();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    createButtons("ranks1", ranks, "rank", "card1");
+    createButtons("suits1", suits, "suit", "card1");
+    createButtons("ranks2", ranks, "rank", "card2");
+    createButtons("suits2", suits, "suit", "card2");
+
+    function updateOdds() {
+      const c1 = selected.card1.rank && selected.card1.suit ? selected.card1.rank + selected.card1.suit : null;
+      const c2 = selected.card2.rank && selected.card2.suit ? selected.card2.rank + selected.card2.suit : null;
+
+      const output = document.getElementById("output");
+
+      if (!c1 || !c2) {
+        output.innerHTML = '';
+        return;
+      }
 
       if (c1 === c2) {
         output.innerHTML = `<p>Please select two different cards.</p>`;
         return;
       }
 
-      let html = `<h2>Preflop Chances</h2>`;
-      html += `<div class="odds-table">`;
+      let html = `<h2>Preflop Chances</h2><div class="odds-table">`;
 
       for (const [hand, chance] of Object.entries(fixedOdds)) {
         html += `
           <div class="odds-row">
-            <div class="label">${formatHandName(hand)}</div>
+            <div class="label-hand">${formatHandName(hand)}</div>
             <div class="bar-container">
               <div class="bar" style="width: ${chance}%;"></div>
             </div>
